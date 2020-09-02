@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Commons;
+using PingPongClientSocket;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -12,7 +14,7 @@ namespace UserChat1
         public int Port { get; set; }
         public string Adress { get; set; }
 
-        public TCPSocketClient(string adress , int port)
+        public TCPSocketClient(string adress, int port)
         {
             Adress = IPAddress.Parse(adress).ToString();
             Port = port;
@@ -30,7 +32,7 @@ namespace UserChat1
             client.Connect(hostname, Port);
             Console.WriteLine("Socket connected to");
             NetworkStream nts = client.GetStream();
-            
+
             while (true)
             {
 
@@ -45,7 +47,11 @@ namespace UserChat1
                     Console.WriteLine("Please enter age");
                     int age = int.Parse(Console.ReadLine());
                     Person person = new Person(name, age);
-                    string input = person.ToString();
+
+                    ConverterObject converterObject = new ConverterObject();
+                    byte[] bytes = converterObject.ObjectToByteArray(new Person(name, age));
+
+                    string input = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
 
                     nts.Write(Encoding.ASCII.GetBytes(input), 0, input.Length);
                 }
@@ -60,8 +66,10 @@ namespace UserChat1
                 int readOut = nts.Read(tmpBuff, 0, 1024);
                 if (readOut > 0)
                 {
-                    string recMsg = Encoding.ASCII.GetString(tmpBuff, 0, readOut);
-                    Console.WriteLine($"from server : {recMsg}");
+                    ConverterObject converterObject = new ConverterObject();
+                    var person = converterObject.FromByteArray(tmpBuff);
+
+                    Console.WriteLine($"from server : {person.ToString()}");
                 }
             }
         }
